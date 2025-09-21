@@ -1,5 +1,3 @@
-# .github/workflows/terraform.yml
-# Description: Lint & validate Terraform changed on PRs and pushes to main.
 name: Terraform Lint & Validate (VCS-driven)
 
 on:
@@ -19,45 +17,35 @@ jobs:
       cancel-in-progress: true
 
     steps:
-      # 1) Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # 2) Setup Terraform CLI
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.13.3
 
-      # 3) (Optional) Print changed files (helpful in PRs)
       - name: List changed files
         if: github.event_name == 'pull_request'
         run: |
           echo "Changed files in PR:"
           git --no-pager diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }} || true
 
-      # 4) Terraform fmt (checks formatting)
       - name: Terraform fmt (check)
-        run: |
-          echo "Checking terraform formatting..."
-          terraform fmt -check -recursive
+        run: terraform fmt -check -recursive
 
-      # 5) Terraform init (local init for validation only; uses local backend and will not save tfplan)
-      - name: Terraform init (for validation)
-        run: |
-          # init only for validation; do not attempt to write remote state
-          terraform init -backend=false -input=false
+      - name: Terraform init (for validation only)
+        run: terraform init -backend=false -input=false
 
-      # 6) Terraform validate
       - name: Terraform validate
-        run: |
-          echo "Validating terraform configuration..."
-          terraform validate -no-color
+        run: terraform validate -no-color
 
-      # 7) Optional: run terraform providers lockfile check (if you use provider lockfiles)
       - name: Check provider lockfile (optional)
-        if: exists('./.terraform.lock.hcl')
         run: |
-          echo "Provider lockfile present: .terraform.lock.hcl"
+          if [ -f ".terraform.lock.hcl" ]; then
+            echo "Provider lockfile present: .terraform.lock.hcl"
+          else
+            echo "No provider lockfile found"
+          fi
