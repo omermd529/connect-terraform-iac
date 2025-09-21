@@ -1,50 +1,29 @@
-name: Terraform Pipeline
+name: Terraform Pipeline (VCS-driven)
 
 on:
   push:
     branches:
-      - main   # Runs only on main branch, not feature branches
+      - main
   pull_request:
     branches:
-      - main   # Optional: run speculative plans on PRs into main
+      - main
 
 jobs:
-  terraform:
-    name: Run Terraform
+  check:
+    name: Lint & Validate Terraform
     runs-on: ubuntu-latest
-
-    # make the Terraform Cloud token available to all steps in this job
-    env:
-      TF_TOKEN_app_terraform_io: ${{ secrets.TF_TOKEN_app_terraform_io }}
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Setup Terraform CLI
+      - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.13.3
-
-      - name: Terraform Init
-        run: terraform init -input=false
 
       - name: Terraform Format Check
         run: terraform fmt -check
 
       - name: Terraform Validate
-        run: terraform validate -json
-
-      - name: Terraform Plan
-        run: terraform plan -input=false -out=tfplan
-
-      - name: Upload plan artifact (optional)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: tfplan
-          path: tfplan
-
-      - name: Terraform Apply (only on main pushes)
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: terraform apply -input=false -auto-approve tfplan
+        run: terraform validate -no-color
