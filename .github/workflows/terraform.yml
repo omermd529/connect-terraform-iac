@@ -1,0 +1,42 @@
+name: Terraform Pipeline
+
+on:
+  push:
+    branches:
+      - main   # ✅ Runs only on main branch, not feature branches
+  pull_request:
+    branches:
+      - main   # ✅ Optional: run speculative plans on PRs into main
+
+jobs:
+  terraform:
+    name: Run Terraform
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout repo
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # 2. Setup Terraform CLI
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.13.3   # Match your Terraform version
+
+      # 3. Terraform Init
+      - name: Terraform Init
+        run: terraform init
+
+      # 4. Terraform Format Check
+      - name: Terraform Format
+        run: terraform fmt -check
+
+      # 5. Terraform Plan
+      - name: Terraform Plan
+        run: terraform plan -input=false
+
+      # 6. Terraform Apply (only on main pushes, not PRs)
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: terraform apply -auto-approve -input=false
