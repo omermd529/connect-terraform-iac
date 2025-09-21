@@ -1,29 +1,63 @@
-name: Terraform Pipeline (VCS-driven)
+# .github/workflows/terraform.yml
+# Description: Lint & validate Terraform changed on PRs and pushes to main.
+name: Terraform Lint & Validate (VCS-driven)
 
 on:
   push:
     branches:
-      - main
+      - main        # runs only for pushes to main
   pull_request:
     branches:
-      - main
+      - main        # runs for PRs targeting main
 
 jobs:
-  check:
+  lint-and-validate:
     name: Lint & Validate Terraform
     runs-on: ubuntu-latest
+    concurrency:
+      group: terraform-lint-validate
+      cancel-in-progress: true
 
     steps:
-      - name: Checkout code
+      # 1) Checkout repository
+      - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
+      # 2) Setup Terraform CLI
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.13.3
 
-      - name: Terraform Format Check
-        run: terraform fmt -check
+      # 3) (Optional) Print changed files (helpful in PRs)
+      - name: List changed files
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "Changed files in PR:"
+          git --no-pager diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }} || true
 
-      - name: Terraform Validate
-        run: terraform validate -no-color
+      # 4) Terraform fmt (checks formatting)
+      - name: Terraform fmt (check)
+        run: |
+          echo "Checking terraform formatting..."
+          terraform fmt -check -recursive
+
+      # 5) Terraform init (local init for validation only; uses local backend and will not save tfplan)
+      - name: Terraform init (for validation)
+        run: |
+          # init only for validation; do not attempt to write remote state
+          terraform init -backend=false -input=false
+
+      # 6) Terraform validate
+      - name: Terraform validate
+        run: |
+          echo "Validating terraform configuration..."
+          terraform validate -no-color
+
+      # 7) Optional: run terraform providers lockfile check (if you use provider lockfiles)
+      - name: Check provider lockfile (optional)
+        if: exists('./.terraform.lock.hcl')
+        run: |
+          echo "Provider lockfile present: .terraform.lock.hcl"
