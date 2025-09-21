@@ -1,7 +1,7 @@
 variable "aws_region" {
   description = "AWS region to create resources in"
   type        = string
-  default     = "us-west-2"
+  default     = "ap-southeast-1"
 }
 
 variable "identity_management_type" {
@@ -12,7 +12,7 @@ variable "identity_management_type" {
 variable "environment_region"{
     type = string
     description = "accepted values are uswest2, useast1"
-    default = "us-west-2"
+    default = "ap-southeast-1"
 }
 
 

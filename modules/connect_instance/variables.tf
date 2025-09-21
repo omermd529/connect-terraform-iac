@@ -5,8 +5,8 @@ variable "identity_management_type" {
 
 variable "environment_region"{
     type = string
-    description = "accepted values are uswest2, useast1"
-    default = "us-west-2"
+    description = "accepted values are uswest2, useast1,ap-southeast-1"
+    default = "ap-southeast-1"
 }
 
 
